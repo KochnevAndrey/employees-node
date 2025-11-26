@@ -1,31 +1,47 @@
-import express from 'express';
-import { PortServer,WrongOperationError } from '../middleware/Parsing';
+import express, { NextFunction, Request, Response } from 'express';
+import { Validation } from '../middleware/Parsing.ts';
 import morgan from 'morgan'
+import 'dotenv/config'
 
-//TODO required middleware
+import EmployeesService from '../service/EmployeesService.ts';
+import EmployeesServiceMap, { EmployeeAlreadyExistsError, EmployeeNotFoundError } from '../service/EmployeesServiceMap.ts';
+import { Employee } from '../model/Employee.ts';
 
-const port = PortServer;
 const app = express();
-app.listen(port, () => console.log(`listening on port ${port}`));
+
+const {PORT, MORGAN_FORMAT, SKIP_CODE_THRESHOLD} = process.env;
+const port = PORT || 3500;
+const service: EmployeesService = new EmployeesServiceMap();
+const morganFormat = MORGAN_FORMAT ?? 'tiny';
+app.listen(port, () => console.log(`server is listening on port ${port}`));
+
 app.use(express.json());
-app.use(morgan('tiny'));
+app.use(morgan(morganFormat));
 
+app.get("/employees", (req, res)=>{
+    res.json(service.getAll(req.query.department as string))
+})
 
-//TODO for app listening
+app.post("/employees", Validation, (req, res) => {
+    res.json(service.addEmployee(req.body as Employee))
+})
 
-//GET employee
-app.get("...", (req, res)=>{
-    //TODO
+app.delete("/employees/:id",(req, res) => {
+    res.json(service.deleteEmployee(req.params.id))
 })
-//Add new employee
-app.post("...", (req, res)=>{
-    //TODO
+
+app.patch("/employees/:id",(req, res) => {
+    res.json(service.updateEmployee(req.params.id, req.body))
 })
-//delete employee
-app.delete("...", (req, res)=>{
-    //TODO
-})
-//update employee
-app.patch("...", (req, res)=>{
-    //TODO
+
+app.use((error: Error, __: Request, res: Response, ___: NextFunction) => {
+    let status = 400;
+    if(error instanceof EmployeeAlreadyExistsError) {
+        status = 409;
+    } else if (error instanceof EmployeeNotFoundError) {
+        status = 404;
+    }
+    res.statusCode = status;
+    res.send(error.message)
+    
 })
