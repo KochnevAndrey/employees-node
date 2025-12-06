@@ -13,10 +13,11 @@ const {PORT, MORGAN_FORMAT, SKIP_CODE_THRESHOLD} = process.env;
 const port = PORT || 3500;
 const service: EmployeesService = new EmployeesServiceMap();
 const morganFormat = MORGAN_FORMAT ?? 'tiny';
+const skipCodeThreshold = SKIP_CODE_THRESHOLD ?? 404;
 app.listen(port, () => console.log(`server is listening on port ${port}`));
 
 app.use(express.json());
-app.use(morgan(morganFormat));
+app.use(morgan(morganFormat,{skip : (req, res) => res.statusCode < +skipCodeThreshold}));
 
 app.get("/employees", (req, res)=>{
     res.json(service.getAll(req.query.department as string))
