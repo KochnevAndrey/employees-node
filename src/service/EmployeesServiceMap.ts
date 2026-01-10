@@ -14,7 +14,7 @@ export class EmployeeNotFoundError extends Error {
     }
 }
 
-export default class EmployeesServiceMap implements EmployeesService{
+class EmployeesServiceMap implements EmployeesService{
      
     employees: Map<string, Employee> = new Map();
     private _employees: Map<string, Employee> = new Map();
@@ -57,3 +57,5 @@ export default class EmployeesServiceMap implements EmployeesService{
         return employee;
     }
 }
+const service = new EmployeesServiceMap();
+export default service;
