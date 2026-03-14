@@ -1,5 +1,9 @@
 import { Employee } from "../model/Employee";
 import EmployeesService from "./EmployeesService";
+import fs from "node:fs";
+import path from "node:path";
+import { getId } from "../utils/sevice-helpers.ts";
+const DEFAULT_FILE_NAME = "employees.data";
 
 export class EmployeeAlreadyExistsError extends Error {
     constructor(id: string) {
@@ -16,15 +20,31 @@ export class EmployeeNotFoundError extends Error {
 
 class EmployeesServiceMap implements EmployeesService{
      
-    employees: Map<string, Employee> = new Map();
     private _employees: Map<string, Employee> = new Map();
+    private _filePath: string;
+    constructor(private _flUpdate = false) {
+        this._filePath = path.resolve(
+        process.cwd(),
+        process.env.FILE_NAME || DEFAULT_FILE_NAME
+        );
+        
+        if (fs.existsSync(this._filePath)) {
+        const jsonEmployees = fs.readFileSync(this._filePath, {
+            encoding: "utf8",
+        });
+        (JSON.parse(jsonEmployees) as Array<Employee>).forEach((empl) =>
+            this.addEmployee(empl)
+        );
+        }
+    }
 
     addEmployee(empl: Employee): Employee {
-        const id = empl.id ?? (empl.id = `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`)
+        const id = empl.id ?? (empl.id = getId())
         if (this._employees.has(id)) {
             throw new EmployeeAlreadyExistsError(id);
         }
         this._employees.set(id, empl);
+        this._flUpdate = true;
         return empl;
     }
 
@@ -39,12 +59,14 @@ class EmployeesServiceMap implements EmployeesService{
     updateEmployee(id: string, empl: Partial<Employee>): Employee {
         const employee =  this.getEmployee(id);
         Object.assign(employee, empl);
+        this._flUpdate = true;
         return employee;
     }
 
     deleteEmployee(id: string): Employee {
         const employee =  this.getEmployee(id);
         this._employees.delete(id);
+        this._flUpdate = true;
         return employee;
     }
    
@@ -55,6 +77,13 @@ class EmployeesServiceMap implements EmployeesService{
             throw new EmployeeNotFoundError(id);
         }
         return employee;
+    }
+    save(): void {
+    const jsonEmployees = JSON.stringify(this.getAll());
+        if (this._flUpdate) {
+        fs.writeFileSync(this._filePath, jsonEmployees, { encoding: "utf8" });
+        this._flUpdate = false;
+        }
     }
 }
 const service = new EmployeesServiceMap();
