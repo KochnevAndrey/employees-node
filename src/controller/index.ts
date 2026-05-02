@@ -6,7 +6,7 @@ import { Employee } from '../model/Employee.ts';
 import service from '../service/EmployeesServiceMap.ts';
 import { EmployeeSchema } from '../middleware/Validation/Schemas.ts';
 import Validation from '../middleware/Validation/Validation.ts';
-import { generateEmployees } from '../utils/sevice-helpers.ts';
+import { getRandomEmployee, getRandomEmployees } from '../utils/sevice-helpers.ts';
 import { errorsHandler } from '../middleware/Errors-Handling/handler.ts';
 
 
@@ -51,6 +51,10 @@ function shutdown() {
 
 process.on("SIGINT", shutdown);
 process.on("SIGTERM", shutdown);
+
 if (process.env.NODE_ENV !== "production") {
-   generateEmployees();
+    if(service.getAll().length === 0) {
+        const employees = getRandomEmployees();
+        employees.forEach(empl => service.addEmployee(empl));
+    }
 }

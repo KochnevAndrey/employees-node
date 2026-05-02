@@ -15,10 +15,8 @@ export const EmployeeSchema = z.object({
   id: z.string().optional(),
   avatar: z.union([z.url(), z.literal("")]),
   department: z.string().refine(
-    (val) => {
-        
-      return departments.has(val);
-    },
+    val => departments.has(val)
+    ,
     { message: `must be one out of ${Array.from(departments.values())}` }
   ),
   birthDate: z.string().refine(
